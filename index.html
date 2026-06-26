@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>App Vault</title>
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="App Vault">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #0e0e1c;
+    --surface-2: #12121e;
+    --border: #1e1e30;
+    --border-light: #2e2e42;
+    --text: #e8e8f0;
+    --text-dim: #8080a0;
+    --text-mute: #555570;
+    --accent: #6366f1;
+    --accent-light: #a5b4fc;
+    --success: #22c55e;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    --good: #90e090;
+    --bad: #f87171;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: 'DM Mono', 'SF Mono', 'Courier New', monospace; -webkit-font-smoothing: antialiased; }
+  body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); min-height: 100vh; }
+  button, input, textarea { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+  textarea::placeholder { color: #333355; }
+
+  .header { border-bottom: 1px solid var(--border); padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(90deg, #0d0d1a, var(--bg)); }
+  .header-title { font-size: 10px; color: var(--accent); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 2px; }
+  .header-name { font-size: 18px; font-weight: 700; color: #f0f0ff; }
+  .header-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+  .pill { background: var(--border); border-radius: 10px; padding: 5px 11px; font-size: 11px; color: #a0a0c0; }
+  .btn { padding: 6px 12px; border-radius: 10px; border: 1px solid var(--border-light); background: transparent; color: var(--text-dim); font-size: 11px; cursor: pointer; transition: all 0.15s; }
+  .btn.primary { border-color: var(--accent); color: var(--accent-light); }
+  .btn.primary.active { background: #1e1e3a; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-grad { background: linear-gradient(135deg, var(--accent), #8b5cf6); color: #fff; border: none; font-weight: 600; padding: 8px 16px; border-radius: 8px; }
+
+  .panel { background: #0d0d1c; border-bottom: 1px solid var(--border); padding: 12px 18px; }
+  .panel-label { font-size: 10px; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+  .panel-hint { font-size: 11px; color: var(--text-mute); margin-bottom: 8px; }
+  textarea, input[type=text] { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-light); background: var(--surface-2); color: var(--text); font-size: 12px; resize: vertical; outline: none; }
+  textarea:focus, input:focus { border-color: var(--accent); }
+  .error { color: var(--bad); font-size: 11px; margin-top: 4px; }
+  .row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
+
+  .tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 18px; }
+  .tab { padding: 11px 14px; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-mute); font-size: 11px; cursor: pointer; letter-spacing: 1px; text-transform: uppercase; }
+  .tab.active { border-bottom-color: var(--accent); color: var(--accent-light); }
+  .tab-count { display: inline-block; min-width: 16px; padding: 1px 5px; border-radius: 8px; background: #2e2e42; color: #a0a0c0; font-size: 9px; margin-left: 2px; letter-spacing: 0; }
+  .tab-count:empty { display: none; }
+  .archive-card { background: #0a0a14; border: 1px solid #1a1a28; border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; opacity: 0.85; }
+  .archive-meta { flex: 1; min-width: 0; }
+  .archive-name { font-size: 13px; font-weight: 600; color: #c0c0d8; margin-bottom: 3px; }
+  .archive-info { font-size: 10px; color: var(--text-mute); }
+  .archive-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .restore-btn { padding: 6px 11px; border-radius: 7px; border: 1px solid var(--accent); background: transparent; color: var(--accent-light); font-size: 11px; cursor: pointer; font-family: inherit; }
+  .restore-btn:hover { background: #1e1e3a; }
+  .purge-btn { padding: 6px 9px; border-radius: 7px; border: 1px solid #3a1e2e; background: transparent; color: var(--danger); font-size: 11px; cursor: pointer; font-family: inherit; }
+
+  .container { padding: 14px 18px; max-width: 860px; margin: 0 auto; }
+  .filters { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+  .filter-chip { padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-light); background: transparent; color: #666680; font-size: 10px; cursor: pointer; }
+  .filter-chip.active { border-color: var(--accent); background: #1e1e3a; color: var(--accent-light); }
+
+  .hint { font-size: 11px; color: var(--text-mute); margin-bottom: 8px; }
+  .empty { text-align: center; color: #333350; padding: 60px 0; font-size: 12px; line-height: 2; }
+
+  .card-list { display: grid; gap: 8px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; transition: border-color 0.15s; }
+  .card.selected { background: #0f0f22; border-color: var(--accent); }
+  .card-header { padding: 12px 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+  .icon-img { width: 48px; height: 48px; border-radius: 11px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border-light); background: #1e1e30; }
+  .icon-fallback { width: 48px; height: 48px; border-radius: 11px; background: #1e1e30; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+  .card-main { flex: 1; min-width: 0; }
+  .card-title-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+  .card-name { font-size: 14px; font-weight: 700; color: #f0f0ff; }
+  .badge { font-size: 9px; padding: 2px 7px; border-radius: 20px; border: 1px solid; letter-spacing: 0.5px; }
+  .badge.req { border-color: rgba(34,197,94,0.25); color: var(--success); background: rgba(34,197,94,0.08); }
+  .badge.opt { border-color: rgba(245,158,11,0.25); color: var(--warn); background: rgba(245,158,11,0.08); }
+  .badge.del { border-color: rgba(239,68,68,0.25); color: var(--danger); background: rgba(239,68,68,0.08); }
+  .meta-row { display: flex; align-items: center; gap: 10px; font-size: 10px; color: #7080a0; flex-wrap: wrap; }
+  .stars { color: var(--warn); }
+  .dot { width: 5px; height: 5px; border-radius: 50%; display: inline-block; margin-right: 3px; }
+
+  .check { width: 22px; height: 22px; border-radius: 6px; border: 1.5px solid #3a3a55; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; flex-shrink: 0; padding: 0; }
+  .check.checked { background: var(--accent); border-color: var(--accent); }
+  .expand { color: var(--text-mute); font-size: 12px; flex-shrink: 0; transition: transform 0.2s; }
+  .expand.open { transform: rotate(90deg); }
+
+  .details { border-top: 1px solid #1a1a28; padding: 12px 14px; background: #0a0a14; }
+  .desc { font-size: 11px; color: #b0b0c8; margin-bottom: 12px; line-height: 1.5; }
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; font-size: 10px; }
+  .meta-cell { background: var(--surface); padding: 6px 9px; border-radius: 6px; border: 1px solid #1a1a28; }
+  .meta-key { color: var(--text-mute); font-size: 9px; margin-bottom: 2px; letter-spacing: 1px; }
+  .meta-val { color: #c0c0d8; }
+  .update-box { background: #0e0e22; padding: 8px 10px; border-radius: 8px; border: 1px solid #1e1e3a; margin-bottom: 12px; }
+  .update-label { font-size: 9px; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; }
+  .update-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 10px; }
+  .update-grid .k { color: var(--text-mute); }
+  .update-grid .v { color: var(--accent-light); }
+
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .pc-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+  .pc-pos { color: var(--success); }
+  .pc-neg { color: var(--bad); }
+  .pc-item { font-size: 10px; margin-bottom: 2px; }
+  .reason { font-size: 10px; color: #7070a0; border-top: 1px solid #1a1a28; padding-top: 8px; margin-bottom: 10px; }
+  .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .link-btn { font-size: 10px; color: var(--accent-light); background: #1a1a30; padding: 5px 10px; border-radius: 6px; border: 1px solid #2e2e4a; }
+  .danger-btn { background: transparent; border: 1px solid #3a1e2e; color: var(--danger); cursor: pointer; font-size: 10px; padding: 5px 10px; border-radius: 6px; }
+
+  .compare-go { width: 100%; margin-top: 12px; padding: 11px; border-radius: 10px; border: 1px dashed var(--accent); background: transparent; color: var(--accent-light); font-size: 12px; cursor: pointer; }
+  .save-indicator { font-size: 10px; color: var(--success); margin-right: 4px; }
+
+  .toolbar { display: flex; gap: 8px; padding: 8px 18px; border-bottom: 1px solid var(--border); background: #0d0d1c; font-size: 11px; color: var(--text-mute); align-items: center; }
+
+  /* Compare tab */
+  .cmp-grid { display: grid; gap: 6px; margin-bottom: 14px; }
+  .cmp-row { display: grid; gap: 6px; align-items: start; }
+  .cmp-header-cell { background: var(--surface); border: 1px solid var(--border-light); border-radius: 10px; padding: 8px 6px; text-align: center; position: relative; }
+  .cmp-remove { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; border: none; background: rgba(239,68,68,0.15); color: var(--danger); font-size: 11px; line-height: 1; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; }
+  .cmp-remove:hover { background: rgba(239,68,68,0.35); }
+  .cmp-clear-all { padding: 7px 14px; border-radius: 8px; border: 1px solid #3a1e2e; background: transparent; color: var(--danger); font-size: 11px; cursor: pointer; font-family: inherit; margin-left: 8px; }
+  .cmp-icon { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; margin-bottom: 4px; border: 1px solid var(--border-light); background: #1e1e30; }
+  .cmp-icon-fallback { font-size: 20px; margin-bottom: 4px; }
+  .cmp-title { font-size: 10px; font-weight: 700; color: #f0f0ff; margin-bottom: 2px; }
+  .cmp-label { font-size: 9px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 1px; padding-top: 7px; }
+  .cmp-cell { background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 6px 8px; }
+
+  /* Toast */
+  /* Custom modal — works in PWA where confirm() is blocked */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 200; backdrop-filter: blur(4px); }
+  .modal { background: var(--surface); border: 1px solid var(--border-light); border-radius: 14px; padding: 20px; max-width: 320px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+  .modal-title { font-size: 14px; font-weight: 700; color: #f0f0ff; margin-bottom: 10px; }
+  .modal-msg { font-size: 12px; color: #b0b0c8; line-height: 1.6; margin-bottom: 18px; white-space: pre-wrap; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .modal-btn { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-light); background: transparent; color: var(--text-dim); font-size: 12px; cursor: pointer; font-family: inherit; }
+  .modal-btn.primary { background: linear-gradient(135deg, var(--accent), #8b5cf6); border: none; color: #fff; font-weight: 600; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--accent); color: var(--text); padding: 10px 16px; border-radius: 10px; font-size: 12px; z-index: 100; box-shadow: 0 4px 16px rgba(99,102,241,0.3); opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+
+  .sort-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding: 8px 18px 4px; border-bottom: 1px solid var(--border); background: #0c0c18; }
+  .sort-label { font-size: 10px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 2px; margin-right: 4px; }
+  .sort-chip { padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-light); background: transparent; color: #666680; font-size: 10px; cursor: pointer; font-family: inherit; }
+  .sort-chip.active { border-color: var(--accent); background: #1e1e3a; color: var(--accent-light); }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div>
+    <div class="header-title">APP VAULT</div>
+    <div class="header-name">整理你的 App 清單</div>
+  </div>
+  <div class="header-actions">
+    <span class="save-indicator hidden" id="saveIndicator">✓ 已儲存</span>
+    <div class="pill" id="appCount">0 個</div>
+    <button class="btn" id="btnSyncAll" title="從 App Store 抓最新資訊">🔄 同步</button>
+    <button class="btn" id="btnExport">匯出</button>
+    <button class="btn primary" id="btnImport">+ 新增</button>
+  </div>
+</div>
+
+<!-- Export Panel -->
+<div class="panel hidden" id="exportPanel">
+  <div class="panel-label">匯出當前清單</div>
+  <div class="panel-hint">📋 複製後可用於備份或同步</div>
+  <textarea id="exportText" readonly rows="4"></textarea>
+  <div class="row">
+    <button class="btn primary" id="btnCopy">複製</button>
+    <button class="btn" id="btnDownload">下載 JSON 檔</button>
+  </div>
+</div>
+
+<!-- Import Panel -->
+<div class="panel hidden" id="importPanel">
+  <div class="panel-label">貼上 App 資料 JSON</div>
+  <div class="panel-hint">📌 把 App Store 網址傳給 Claude → 回傳 JSON → 貼到下方</div>
+  <textarea id="importText" rows="4" placeholder="← 在這裡貼上 JSON"></textarea>
+  <div class="error hidden" id="importError"></div>
+  <div class="row">
+    <button class="btn" id="btnPaste">📋 貼上</button>
+    <button class="btn-grad" id="btnDoImport">匯入</button>
+    <button class="btn" id="btnClearInput">清除</button>
+    <span style="flex:1"></span>
+    <button class="btn" id="btnImportFile">⬆ 匯入備份檔</button>
+    <input type="file" id="fileInput" accept=".json" style="display:none">
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab active" data-tab="tracker">📋 追蹤清單</button>
+  <button class="tab" data-tab="compare">🔍 比較分析</button>
+  <button class="tab" data-tab="archive">🗂 歷史 <span class="tab-count" id="archiveCount"></span></button>
+</div>
+
+<div class="container">
+
+  <!-- Tracker Tab -->
+  <div id="tab-tracker">
+    <div class="sort-row" id="sortRow">
+      <span class="sort-label">排序</span>
+      <button class="sort-chip" data-sort="default">預設</button>
+      <button class="sort-chip" data-sort="freshness">🟢 活躍度</button>
+      <button class="sort-chip" data-sort="rating">⭐ 星級</button>
+      <button class="sort-chip" data-sort="name">🔤 名稱</button>
+    </div>
+    <div class="filters" id="filters"></div>
+    <div class="hint hidden" id="selectHint">💡 點選右側方塊勾選後可比較</div>
+    <div class="card-list" id="cardList"></div>
+    <div class="empty hidden" id="emptyState">
+      點右上角「+ 新增」<br>貼上 Claude 分析的 JSON 開始追蹤 📱
+    </div>
+    <button class="compare-go hidden" id="compareGo"></button>
+  </div>
+
+  <!-- Archive Tab -->
+  <div id="tab-archive" class="hidden">
+    <div class="hint" id="archiveHint"></div>
+    <div class="empty hidden" id="archiveEmpty">
+      🗂 歷史清單是空的<br>
+      <span style="font-size:11px;color:#444">刪除的 App 會放在這裡備查</span>
+    </div>
+    <div class="card-list" id="archiveList"></div>
+    <button class="btn" id="btnPurgeAll" style="margin-top:14px;display:none;border-color:#3a1e2e;color:var(--danger)">🗑 清空全部歷史</button>
+  </div>
+
+  <!-- Compare Tab -->
+  <div id="tab-compare" class="hidden">
+    <div class="empty hidden" id="compareEmpty">請先在追蹤清單<br>勾選 2 個以上 App</div>
+    <div id="compareContent" class="hidden">
+      <div class="hint" id="compareCount"></div>
+      <div class="cmp-grid" id="compareGrid"></div>
+      <div style="display:flex;align-items:center;flex-wrap:wrap">
+        <button class="btn" id="btnBackToTracker">← 返回清單</button>
+        <button class="cmp-clear-all" id="btnClearCompare">清空比較</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Custom Modal -->
+<div id="modalBackdrop" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">確認</div>
+    <div class="modal-msg" id="modalMsg"></div>
+    <div class="modal-actions">
+      <button class="modal-btn" id="modalCancel">取消</button>
+      <button class="modal-btn primary" id="modalOk">確認</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// App Vault — Standalone PWA
+// ============================================================
+
+const STORAGE_KEY = "app-vault-data-v1";
+const ARCHIVE_KEY = "app-vault-archive-v1";
+const CATEGORIES = ["生產力", "健康fitness", "社交通訊", "娛樂媒體", "工具實用", "財務金融", "教育學習", "其他"];
+const categoryEmoji = { "生產力": "⚡", "健康fitness": "💪", "社交通訊": "💬", "娛樂媒體": "🎬", "工具實用": "🔧", "財務金融": "💰", "教育學習": "📚", "其他": "📦" };
+const necessityClass = { "必要": "req", "可選": "opt", "可刪除": "del" };
+
+// Default seed data
+const SEED_APPS = [
+  { id: 1, name: "PDF Print - Templates", developer: "HARUN ADAL", category: "生產力", price: "免費 + 內購 $4.99", platform: "iOS",
+    description: "PDF排版、模板套用、圖片轉PDF、多頁合一列印",
+    pros: ["功能豐富含模板庫", "本地處理保護隱私", "支援N-up省紙列印"],
+    cons: ["開發者新且評分少", "廣告追蹤收集資料", "Pro功能需付費解鎖"],
+    necessity: "可選", necessityReason: "功能實用但同類App多，iOS內建已可處理基本PDF需求",
+    rating: 3, ratingCount: 0, averageRating: 0,
+    version: "1.0.4", lastUpdate: "2026-05-19", releaseDate: "2026-05-09", fileSize: "63.8 MB",
+    icon: "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/f2/53/c3/f253c3be-f25d-232d-2794-de688d0dd6d9/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/100x100bb.jpg",
+    storeUrl: "https://apps.apple.com/app/id6763505015"
+  },
+  { id: 2, name: "ADHD Matrix", developer: "Anthony Gagliardo", category: "生產力", price: "免費（一次買斷，無內購）", platform: "iOS",
+    description: "艾森豪矩陣任務管理，快速分類輕重緩急",
+    pros: ["完全不收集任何資料隱私最佳", "無訂閱無帳號一次買斷", "支援iCloud同步與桌面Widget"],
+    cons: ["僅英文介面", "評分數量極少新App", "功能極簡無複雜專案管理"],
+    necessity: "可選", necessityReason: "適合有任務混亂困擾的人，若已有習慣的代辦工具則重疊",
+    rating: 4, ratingCount: 1, averageRating: 5.0,
+    version: "1.4", lastUpdate: "2026-05-14", releaseDate: "2026-05-05", fileSize: "3.7 MB",
+    icon: "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/c7/0c/8a/c70c8afc-0759-0641-b998-aeb6f22ba4c1/AppIcon-0-0-1x_U007epad-0-1-85-220.png/100x100bb.jpg",
+    storeUrl: "https://apps.apple.com/app/id6764720291"
+  },
+  { id: 3, name: "GitHub", developer: "GitHub", category: "工具實用", price: "免費", platform: "iOS",
+    description: "GitHub行動版，瀏覽程式碼、處理issue、審查PR",
+    pros: ["官方原生App免費無廣告", "可審查PR與merge代碼", "Issue與通知整合方便", "支援黑暗模式與通知"],
+    cons: ["需要GitHub帳號才能用", "適合輕量任務不適合寫code", "部分桌面功能仍缺"],
+    necessity: "可選", necessityReason: "若你要做GitHub Pages部署則必裝，否則可有可無",
+    rating: 5, ratingCount: 32838, averageRating: 4.83,
+    version: "1.259.0", lastUpdate: "2026-05-20", releaseDate: "2020-03-17", fileSize: "139.8 MB",
+    icon: "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/14/1d/12/141d12f2-d745-e136-715d-2e43ca6029a0/AppIcon-0-0-1x_U007epad-0-1-P3-85-220.png/100x100bb.jpg",
+    storeUrl: "https://apps.apple.com/app/id1477376905"
+  },
+  { id: 4, name: "AmberTime: USB Photo Backup", developer: "刚 熊", category: "工具實用", price: "免費", platform: "iOS",
+    description: "照片與檔案直接備份到USB外接硬碟，完全離線",
+    pros: ["完全離線備份不依賴雲端", "支援增量備份只傳新檔", "可備份相簿與自訂資料夾", "小巧僅7MB資源占用低", "支援日期區間篩選備份"],
+    cons: ["評價數仍少(9個)新App", "個人開發者長期維護不確定", "需要USB-C硬碟或讀卡機"],
+    necessity: "可選", necessityReason: "若你有大量照片需要備份且不想用iCloud付費，這是少數能直接寫USB的方案",
+    rating: 5, ratingCount: 9, averageRating: 5.0,
+    version: "1.1.0", lastUpdate: "2026-05-10", releaseDate: "2026-03-24", fileSize: "7.1 MB",
+    icon: "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/48/b9/9d/48b99db5-a017-c5fe-69ee-7f67cf29c77d/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/100x100bb.jpg",
+    storeUrl: "https://apps.apple.com/app/id6760618605"
+  },
+  { id: 5, name: "NoteOS: Voice Notes & Tasks", developer: "Abdullah YILMAZ", category: "生產力", price: "免費", platform: "iOS",
+    description: "AI筆記、語音記錄、待辦、習慣追蹤的整合工具",
+    pros: ["AI整合語音轉文字筆記", "筆記/任務/習慣四合一不分散", "UI簡潔工作流順暢", "上架即穩定4.44星", "檔案小僅22MB"],
+    cons: ["僅英文介面無中文", "43天未更新節奏放緩", "與ADHD Matrix功能重疊", "新開發者長期維護不確定"],
+    necessity: "可選", necessityReason: "若你想用AI整合多種生產力功能可考慮；但已有ADHD Matrix則功能重疊",
+    rating: 4, ratingCount: 25, averageRating: 4.44,
+    version: "1.0.3", lastUpdate: "2026-04-11", releaseDate: "2026-04-11", fileSize: "21.9 MB",
+    icon: "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/0b/ab/eb/0babeb4b-755f-da47-7947-11f8f34de14c/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/100x100bb.jpg",
+    storeUrl: "https://apps.apple.com/app/id6761012123"
+  },
+  { id: 6, name: "Palabros: Dictionary", developer: "Nacho Cerrato Ruiz", category: "教育學習", price: "免費", platform: "iOS",
+    description: "西英雙語字典+單字記憶遊戲，4種複習模式",
+    pros: ["免費無內購無廣告", "4種複習遊戲幫助記憶", "昨天剛更新非常活躍", "可儲存生詞並複習", "4.69星好評"],
+    cons: ["僅西班牙文與英文無中文支援", "檔案較大130MB", "評價數仍少新App", "若不學西文用途有限"],
+    necessity: "可選", necessityReason: "非常適合學西班牙文的人，否則用途有限",
+    rating: 5, ratingCount: 16, averageRating: 4.69,
+    version: "1.5.2", lastUpdate: "2026-05-23", releaseDate: "2026-02-20", fileSize: "130.7 MB",
+    icon: "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/1b/a4/05/1ba40505-0374-d637-313c-f085a01dc945/AppIcon-0-1x_U007ephone-0-1-85-220-0.png/100x100bb.jpg",
+    storeUrl: "https://apps.apple.com/app/id6758098070"
+  },
+  { id: 7, name: "雲端發票", developer: "雲端", category: "財務金融", price: "免費", platform: "iOS",
+    description: "財政部官方推薦，手機條碼存發票、自動對獎、消費分析",
+    pros: ["官方認證可信賴", "671評價4.86星社群肯定", "支援文字備註與消費分析", "可繳水電瓦斯生活帳單", "歷史悠久13年穩定"],
+    cons: ["介面較傳統", "136MB略大", "功能多但學習曲線較陡"],
+    necessity: "可選", necessityReason: "若你已有其他發票App則重疊；功能最全但介面老派",
+    rating: 5, ratingCount: 671, averageRating: 4.86,
+    version: "3.8.22", lastUpdate: "2026-05-22", releaseDate: "2012-09-21", fileSize: "136.5 MB",
+    icon: "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/5c/a5/63/5ca56391-148a-cd65-298f-ace0210b980a/AppIconMain-0-0-1x_U007ephone-0-0-0-11-0-0-0-85-220.png/100x100bb.jpg",
+    storeUrl: "https://apps.apple.com/app/id512920023"
+  },
+  { id: 8, name: "發票怪獸", developer: "Spring Trees Technology", category: "財務金融", price: "免費", platform: "iOS",
+    description: "養怪獸對發票的遊戲化發票管理App",
+    pros: ["遊戲化設計可愛有趣", "App Store曾排第一獲多獎", "養怪獸換怪獸幣回饋", "39評價4.77星", "Google年度最佳生活幫手"],
+    cons: ["303MB檔案最大", "遊戲化未必適合所有人", "怪獸幣價值有限"],
+    necessity: "可選", necessityReason: "若你喜歡遊戲化生活則加分，否則純功能不如其他",
+    rating: 5, ratingCount: 39, averageRating: 4.77,
+    version: "4.13.0", lastUpdate: "2026-05-18", releaseDate: "2023-03-22", fileSize: "303.0 MB",
+    icon: "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/fa/c3/c2/fac3c22d-10cc-5b8c-f224-8e9f608b2adc/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/100x100bb.jpg",
+    storeUrl: "https://apps.apple.com/app/id1089127465"
+  },
+  { id: 9, name: "發票存摺", developer: "invos Co.,Ltd.", category: "財務金融", price: "免費", platform: "iOS",
+    description: "宣稱開出最多中獎發票，800萬用戶使用",
+    pros: ["1192評價4.77星評價最多", "800萬用戶數最大", "宣稱中獎率最高", "高精度QR掃描快", "多元發票回饋活動"],
+    cons: ["217MB較大", "廣告較多", "回饋活動可能變相促銷"],
+    necessity: "可選", necessityReason: "若注重中獎機率與用戶數可選此款，是發票App的主流選擇",
+    rating: 5, ratingCount: 1192, averageRating: 4.77,
+    version: "7.38.1", lastUpdate: "2026-05-20", releaseDate: "2017-09-24", fileSize: "217.1 MB",
+    icon: "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/91/1d/12/911d12c8-1bf9-24cf-5d16-cbf79c5f4c1f/AppIcon-0-0-1x_U007epad-0-1-0-sRGB-85-220.png/100x100bb.jpg",
+    storeUrl: "https://apps.apple.com/app/id1276986959"
+  },
+  { id: 10, name: "雲端發票集點王", developer: "KINGWAY MEDIA", category: "財務金融", price: "免費", platform: "iOS",
+    description: "用發票自動集點換禮，刮刮樂遊戲化",
+    pros: ["每張發票都給點數回饋", "點數可換商城獎品", "刮刮樂小遊戲增加趣味", "中獎自動匯款"],
+    cons: ["14評價最少", "1年未更新較舊", "4.21星偏低", "禮品實用性待評估"],
+    necessity: "可刪除", necessityReason: "更新慢、評價少、與其他發票App功能重疊，可優先淘汰",
+    rating: 4, ratingCount: 14, averageRating: 4.21,
+    version: "4.91", lastUpdate: "2025-04-15", releaseDate: "2017-09-28", fileSize: "122.0 MB",
+    icon: "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/0b/89/07/0b890749-d4a7-b92e-d294-f8a89b1b1ffd/AppIcon-0-0-1x_U007emarketing-0-6-0-85-220.png/100x100bb.jpg",
+    storeUrl: "https://apps.apple.com/app/id1284449476"
+  },
+  { id: 11, name: "發票載具", developer: "KINGWAY MEDIA", category: "工具實用", price: "免費", platform: "iOS",
+    description: "統一發票對獎+雲端加碼獎+夢幻發票自訂圖片",
+    pros: ["644評價4.85星高評價", "未中獎送安慰獎(0050/健身房)", "可自訂發票圖片", "歷史發票自動同步"],
+    cons: ["183MB略大", "與同公司集點王功能重疊", "安慰獎抽中機率未知"],
+    necessity: "可選", necessityReason: "若想要中獎安慰獎可考慮，與集點王二選一",
+    rating: 5, ratingCount: 644, averageRating: 4.85,
+    version: "2.89.0", lastUpdate: "2026-05-18", releaseDate: "2018-09-22", fileSize: "183.1 MB",
+    icon: "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/9f/93/50/9f935088-ee8a-1408-8fdf-30672418170a/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/100x100bb.jpg",
+    storeUrl: "https://apps.apple.com/app/id1434785043"
+  },
+  { id: 12, name: "Receipt Organizer・ReceiptGenie", developer: "Botisan AI", category: "財務金融", price: "免費", platform: "iOS",
+    description: "AI辨識收據、自動分類記帳、生成費用報表",
+    pros: ["AI自動辨識收據省時", "可生成費用報表", "支援多國語言", "54MB輕量"],
+    cons: ["無中文介面", "新App僅64評價", "AI辨識繁體中文發票效果待測", "與台灣發票對獎機制無關"],
+    necessity: "可選", necessityReason: "若做商務記帳或國外旅行可用，台灣發票對獎仍需配合本地App",
+    rating: 5, ratingCount: 64, averageRating: 4.53,
+    version: "2.4.7", lastUpdate: "2026-04-16", releaseDate: "2025-04-20", fileSize: "54.3 MB",
+    icon: "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/41/5d/e8/415de89c-1a19-319d-1d6b-9ac6292eb54c/AppIcon-1x_U007ephone-0-1-85-220-0.png/100x100bb.jpg",
+    storeUrl: "https://apps.apple.com/app/id6740299816"
+  }
+];
+
+// ── State ──
+let state = {
+  apps: [],
+  archived: [],          // soft-deleted apps with .deletedAt timestamp
+  filter: "全部",
+  tab: "tracker",        // tracker | compare | archive
+  selected: new Set(),
+  expanded: new Set(),
+  expandedArchive: new Set(),
+  syncing: new Set(),
+  sortBy: "default",
+};
+
+// Sync a single app and update state
+async function doSync(appId) {
+  const app = state.apps.find(a => a.id === appId);
+  if (!app) return;
+  if (state.syncing.has(appId)) return;
+  state.syncing.add(appId);
+  render();
+  try {
+    const updates = await syncApp(app);
+    Object.assign(app, updates);
+    saveToStorage();
+    toast(`✓ ${app.name} 已同步`);
+  } catch (e) {
+    toast(`✗ ${app.name}: ${e.message}`, 3000);
+  } finally {
+    state.syncing.delete(appId);
+    render();
+  }
+}
+
+// Sync all apps sequentially (avoid hammering API)
+async function doSyncAll() {
+  let ok = 0, fail = 0;
+  for (const app of state.apps) {
+    if (!app.storeUrl) continue;
+    state.syncing.add(app.id);
+    render();
+    try {
+      const updates = await syncApp(app);
+      Object.assign(app, updates);
+      ok++;
+    } catch (e) { fail++; }
+    state.syncing.delete(app.id);
+    render();
+    await new Promise(r => setTimeout(r, 250)); // small delay between requests
+  }
+  saveToStorage();
+  toast(`同步完成：✓${ok} 個，✗${fail} 個`, 2500);
+}
+
+// ── Storage ──
+function loadFromStorage() {
+  // Load archive first
+  try {
+    const arch = localStorage.getItem(ARCHIVE_KEY);
+    if (arch) state.archived = JSON.parse(arch);
+  } catch (e) { console.error("Archive load failed", e); }
+
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      state.apps = JSON.parse(raw);
+      // Merge any new seed apps the user doesn't have yet,
+      // but skip ones they have already archived (don't resurrect deleted apps)
+      const existingUrls = new Set(state.apps.map(a => a.storeUrl).filter(Boolean));
+      const archivedUrls = new Set(state.archived.map(a => a.storeUrl).filter(Boolean));
+      let added = 0;
+      SEED_APPS.forEach(s => {
+        if (s.storeUrl && !existingUrls.has(s.storeUrl) && !archivedUrls.has(s.storeUrl)) {
+          state.apps.push({ ...s, id: Date.now() + added++ });
+        }
+      });
+      if (added > 0) saveToStorage();
+      return true;
+    }
+  } catch (e) { console.error("Load failed", e); }
+  // First time: seed
+  state.apps = SEED_APPS.slice();
+  saveToStorage();
+  return false;
+}
+function saveToStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.apps));
+    localStorage.setItem(ARCHIVE_KEY, JSON.stringify(state.archived));
+    flashSaved();
+  } catch (e) { console.error("Save failed", e); }
+}
+function flashSaved() {
+  const el = document.getElementById("saveIndicator");
+  el.classList.remove("hidden");
+  clearTimeout(flashSaved._t);
+  flashSaved._t = setTimeout(() => el.classList.add("hidden"), 1500);
+}
+
+// ── Helpers ──
+function getFreshness(lastUpdate) {
+  if (!lastUpdate) return null;
+  // Always use current moment so days-ago auto-updates as time passes
+  const days = Math.floor((new Date() - new Date(lastUpdate)) / 86400000);
+  if (days <= 14) return { label: "活躍", color: "#22c55e", days };
+  if (days <= 60) return { label: "正常", color: "#3b82f6", days };
+  if (days <= 180) return { label: "緩慢", color: "#f59e0b", days };
+  return { label: "沉寂", color: "#ef4444", days };
+}
+function stars(n) { n = Math.round(n || 0); return "★".repeat(n) + "☆".repeat(5 - n); }
+
+// Extract App Store ID from storeUrl (e.g. .../app/id1477376905 → "1477376905")
+function getAppId(storeUrl) {
+  if (!storeUrl) return null;
+  const m = storeUrl.match(/id(\d+)/);
+  return m ? m[1] : null;
+}
+
+// JSONP fetch from iTunes Lookup API (bypasses CORS)
+function jsonpFetch(appId, timeoutMs = 8000) {
+  return new Promise((resolve, reject) => {
+    const cb = "itc_" + Date.now() + "_" + Math.floor(Math.random() * 1e6);
+    const script = document.createElement("script");
+    let timeout;
+    window[cb] = (data) => {
+      clearTimeout(timeout);
+      delete window[cb];
+      script.remove();
+      const r = data && data.results && data.results[0];
+      r ? resolve(r) : reject(new Error("App not found"));
+    };
+    timeout = setTimeout(() => {
+      delete window[cb];
+      script.remove();
+      reject(new Error("Timeout"));
+    }, timeoutMs);
+    script.onerror = () => { clearTimeout(timeout); delete window[cb]; script.remove(); reject(new Error("Network error")); };
+    script.src = `https://itunes.apple.com/lookup?id=${encodeURIComponent(appId)}&callback=${cb}`;
+    document.head.appendChild(script);
+  });
+}
+
+// Sync one app — returns updated fields
+async function syncApp(app) {
+  const id = getAppId(app.storeUrl);
+  if (!id) throw new Error("無法解析 App ID");
+  const r = await jsonpFetch(id);
+  return {
+    version: r.version,
+    lastUpdate: (r.currentVersionReleaseDate || "").slice(0, 10),
+    releaseDate: (r.releaseDate || "").slice(0, 10),
+    ratingCount: r.userRatingCount || 0,
+    averageRating: r.averageUserRating || 0,
+    fileSize: r.fileSizeBytes ? (r.fileSizeBytes / 1024 / 1024).toFixed(1) + " MB" : app.fileSize,
+    icon: r.artworkUrl100 || app.icon,
+    _lastSynced: new Date().toISOString(),
+  };
+}
+function fmtCount(n) { if (!n) return "0"; if (n >= 10000) return (n/1000).toFixed(0)+"k"; if (n >= 1000) return (n/1000).toFixed(1)+"k"; return String(n); }
+
+function sortApps(arr, mode) {
+  const copy = arr.slice();
+  if (mode === "freshness") {
+    // Most-recent update first; missing date goes last
+    copy.sort((a, b) => {
+      const da = a.lastUpdate ? new Date(a.lastUpdate).getTime() : 0;
+      const db = b.lastUpdate ? new Date(b.lastUpdate).getTime() : 0;
+      return db - da;
+    });
+  } else if (mode === "name") {
+    copy.sort((a, b) => (a.name || "").localeCompare(b.name || "", "zh-Hant"));
+  } else if (mode === "rating") {
+    // Highest rating first; tie-break by rating count
+    copy.sort((a, b) => {
+      const ra = a.averageRating || a.rating || 0;
+      const rb = b.averageRating || b.rating || 0;
+      if (rb !== ra) return rb - ra;
+      return (b.ratingCount || 0) - (a.ratingCount || 0);
+    });
+  }
+  return copy;
+}
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+// ── Render ──
+function render() {
+  document.getElementById("appCount").textContent = `${state.apps.length} 個`;
+  renderSort();
+  renderFilters();
+  // Tab visibility
+  document.getElementById("tab-tracker").classList.toggle("hidden", state.tab !== "tracker");
+  document.getElementById("tab-compare").classList.toggle("hidden", state.tab !== "compare");
+  document.getElementById("tab-archive").classList.toggle("hidden", state.tab !== "archive");
+  if (state.tab === "tracker") renderCards();
+  else if (state.tab === "compare") renderCompare();
+  else if (state.tab === "archive") renderArchive();
+  // Update archive badge count
+  document.getElementById("archiveCount").textContent = state.archived.length || "";
+  // Tab styles
+  document.querySelectorAll(".tab").forEach(t => {
+    t.classList.toggle("active", t.dataset.tab === state.tab);
+  });
+}
+
+function renderSort() {
+  document.querySelectorAll(".sort-chip").forEach(b => {
+    b.classList.toggle("active", b.dataset.sort === state.sortBy);
+    b.onclick = () => { state.sortBy = b.dataset.sort; render(); };
+  });
+}
+
+function renderFilters() {
+  const el = document.getElementById("filters");
+  if (state.apps.length === 0) { el.innerHTML = ""; return; }
+  const cats = ["全部", ...CATEGORIES];
+  el.innerHTML = cats.map(c => {
+    const active = c === state.filter ? " active" : "";
+    const emoji = c !== "全部" ? categoryEmoji[c] + " " : "";
+    return `<button class="filter-chip${active}" data-cat="${esc(c)}">${emoji}${esc(c)}</button>`;
+  }).join("");
+  el.querySelectorAll(".filter-chip").forEach(b => {
+    b.onclick = () => { state.filter = b.dataset.cat; render(); };
+  });
+}
+
+function renderCards() {
+  const baseList = state.filter === "全部" ? state.apps : state.apps.filter(a => a.category === state.filter);
+  const filtered = sortApps(baseList, state.sortBy);
+  const list = document.getElementById("cardList");
+  const empty = document.getElementById("emptyState");
+  const hint = document.getElementById("selectHint");
+  const compareGo = document.getElementById("compareGo");
+
+  if (state.apps.length === 0) {
+    list.innerHTML = "";
+    empty.classList.remove("hidden");
+    hint.classList.add("hidden");
+    compareGo.classList.add("hidden");
+    return;
+  }
+  empty.classList.add("hidden");
+  hint.classList.toggle("hidden", state.apps.length < 2);
+
+  list.innerHTML = filtered.map(app => {
+    const expanded = state.expanded.has(app.id);
+    const selected = state.selected.has(app.id);
+    const fresh = getFreshness(app.lastUpdate);
+    const nc = necessityClass[app.necessity] || "opt";
+
+    const iconHtml = app.icon
+      ? `<img src="${esc(app.icon)}" class="icon-img" alt="${esc(app.name)}" onerror="this.outerHTML='<div class=\\'icon-fallback\\'>${categoryEmoji[app.category] || "📦"}</div>'">`
+      : `<div class="icon-fallback">${categoryEmoji[app.category] || "📦"}</div>`;
+
+    const freshHtml = fresh
+      ? `<span style="display:inline-flex;align-items:center;gap:3px"><span class="dot" style="background:${fresh.color}"></span><span style="color:${fresh.color};font-size:9px">${fresh.label}</span><span style="color:var(--text-mute);font-size:9px">${fresh.days}天前</span></span>`
+      : "";
+
+    const detailsHtml = !expanded ? "" : `
+      <div class="details">
+        <div class="desc">${esc(app.description)}</div>
+        <div class="meta-grid">
+          <div class="meta-cell"><div class="meta-key">開發者</div><div class="meta-val">${esc(app.developer)}</div></div>
+          <div class="meta-cell"><div class="meta-key">價格</div><div class="meta-val">${esc(app.price)}</div></div>
+          <div class="meta-cell"><div class="meta-key">分類 / 平台</div><div class="meta-val">${categoryEmoji[app.category] || ""} ${esc(app.category)} · ${esc(app.platform)}</div></div>
+          ${app.fileSize ? `<div class="meta-cell"><div class="meta-key">檔案大小</div><div class="meta-val">${esc(app.fileSize)}</div></div>` : ""}
+        </div>
+        ${(app.version || app.lastUpdate) ? `
+        <div class="update-box">
+          <div class="update-label">📅 更新資訊</div>
+          <div class="update-grid">
+            ${app.version ? `<div><span class="k">版本</span> <span class="v">v${esc(app.version)}</span></div>` : ""}
+            ${app.lastUpdate ? `<div><span class="k">上次更新</span> <span class="v">${esc(app.lastUpdate)}</span></div>` : ""}
+            ${app.releaseDate ? `<div><span class="k">首次上架</span> <span class="v">${esc(app.releaseDate)}</span></div>` : ""}
+            ${fresh ? `<div><span class="k">活躍度</span> <span class="v" style="color:${fresh.color}">${fresh.label} (${fresh.days}天前)</span></div>` : ""}
+            ${app._lastSynced ? `<div style="grid-column:1/-1;margin-top:4px"><span class="k">資料同步</span> <span class="v" style="font-size:9px">${new Date(app._lastSynced).toLocaleString("zh-TW",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"})}</span></div>` : ""}
+          </div>
+        </div>` : ""}
+        <div class="pros-cons">
+          <div>
+            <div class="pc-label pc-pos">優點</div>
+            ${(app.pros || []).map(p => `<div class="pc-item" style="color:var(--good)">+ ${esc(p)}</div>`).join("")}
+          </div>
+          <div>
+            <div class="pc-label pc-neg">缺點</div>
+            ${(app.cons || []).map(c => `<div class="pc-item" style="color:var(--bad)">− ${esc(c)}</div>`).join("")}
+          </div>
+        </div>
+        <div class="reason">💡 ${esc(app.necessityReason)}</div>
+        <div class="actions">
+          ${app.storeUrl ? `<a class="link-btn" href="${esc(app.storeUrl)}" target="_blank" rel="noopener">開啟 App Store ↗</a>` : ""}
+          ${app.storeUrl ? `<button class="link-btn" data-act="sync" data-id="${app.id}" style="cursor:pointer;border:1px solid #2e2e4a">${state.syncing.has(app.id) ? "⏳ 同步中..." : "🔄 同步資料"}</button>` : ""}
+          <button class="danger-btn" data-act="remove" data-id="${app.id}">🗑 刪除此 App</button>
+        </div>
+      </div>`;
+
+    return `
+      <div class="card${selected ? " selected" : ""}" data-id="${app.id}">
+        <div class="card-header" data-act="expand" data-id="${app.id}">
+          ${iconHtml}
+          <div class="card-main">
+            <div class="card-title-row">
+              <span class="card-name">${esc(app.name)}</span>
+              <span class="badge ${nc}">${esc(app.necessity)}</span>
+            </div>
+            <div class="meta-row">
+              <span class="stars">${stars(app.averageRating || app.rating)}</span>
+              <span style="color:#9090b0">${(app.averageRating || app.rating || 0).toFixed(1)}</span>
+              <span style="color:var(--text-mute)">(${fmtCount(app.ratingCount || 0)} 評價)</span>
+              ${freshHtml}
+            </div>
+          </div>
+          <button class="check${selected ? " checked" : ""}" data-act="select" data-id="${app.id}">${selected ? "✓" : ""}</button>
+          <span class="expand${expanded ? " open" : ""}">▶</span>
+        </div>
+        ${detailsHtml}
+      </div>`;
+  }).join("");
+
+  // Event bindings
+  list.querySelectorAll('[data-act="expand"]').forEach(el => {
+    el.onclick = (e) => {
+      // Don't expand if clicking on the select checkbox
+      if (e.target.closest('[data-act="select"]')) return;
+      const id = +el.dataset.id;
+      if (state.expanded.has(id)) state.expanded.delete(id); else state.expanded.add(id);
+      render();
+    };
+  });
+  list.querySelectorAll('[data-act="select"]').forEach(el => {
+    el.onclick = (e) => {
+      e.stopPropagation();
+      const id = +el.dataset.id;
+      if (state.selected.has(id)) state.selected.delete(id); else state.selected.add(id);
+      render();
+    };
+  });
+  list.querySelectorAll('[data-act="sync"]').forEach(el => {
+    el.onclick = (e) => {
+      e.stopPropagation();
+      doSync(+el.dataset.id);
+    };
+  });
+  list.querySelectorAll('[data-act="remove"]').forEach(el => {
+    el.onclick = async (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const id = +el.dataset.id;
+      const app = state.apps.find(a => a.id === id);
+      if (!app) return;
+      const ok = await showConfirm(`${app.name}\n\n(會移到歷史清單，之後可隨時還原)`, "確定要刪除？");
+      if (ok) {
+        state.archived.unshift({ ...app, deletedAt: new Date().toISOString() });
+        state.apps = state.apps.filter(a => a.id !== id);
+        state.selected.delete(id);
+        state.expanded.delete(id);
+        saveToStorage();
+        render();
+        toast(`✓ 已移至歷史清單`);
+      }
+    };
+  });
+
+  // Compare go button
+  if (state.selected.size >= 2) {
+    compareGo.classList.remove("hidden");
+    compareGo.textContent = `🔍 比較已選 ${state.selected.size} 個 App →`;
+    compareGo.onclick = () => { state.tab = "compare"; render(); };
+  } else {
+    compareGo.classList.add("hidden");
+  }
+}
+
+function renderCompare() {
+  const list = state.apps.filter(a => state.selected.has(a.id));
+  const empty = document.getElementById("compareEmpty");
+  const content = document.getElementById("compareContent");
+
+  if (list.length < 2) {
+    empty.classList.remove("hidden");
+    content.classList.add("hidden");
+    return;
+  }
+  empty.classList.add("hidden");
+  content.classList.remove("hidden");
+  document.getElementById("compareCount").textContent = `比較 ${list.length} 個 App`;
+
+  const cols = `90px repeat(${list.length}, 1fr)`;
+  const headerCells = list.map(app => {
+    const icon = app.icon
+      ? `<img src="${esc(app.icon)}" class="cmp-icon" alt="${esc(app.name)}" onerror="this.outerHTML='<div class=\\'cmp-icon-fallback\\'>${categoryEmoji[app.category] || "📦"}</div>'">`
+      : `<div class="cmp-icon-fallback">${categoryEmoji[app.category] || "📦"}</div>`;
+    return `<div class="cmp-header-cell"><button class="cmp-remove" data-cmp-remove="${app.id}" title="從比較中移除">✕</button>${icon}<div class="cmp-title">${esc(app.name)}</div><div class="stars" style="font-size:9px">${stars(app.averageRating || app.rating)}</div></div>`;
+  }).join("");
+
+  const rows = [
+    ["評分", a => {
+      const r = a.averageRating || a.rating || 0;
+      return `<div style="color:var(--warn);font-size:10px">${stars(r)}</div><div style="font-size:9px;color:#7080a0">${r.toFixed(1)} · ${fmtCount(a.ratingCount || 0)}人</div>`;
+    }],
+    ["活躍度", a => { const f = getFreshness(a.lastUpdate); return f ? `<span style="font-size:10px;color:${f.color}">${f.label} (${f.days}天前)</span>` : `<span style="font-size:10px;color:#555">—</span>`; }],
+    ["版本", a => `<span style="font-size:10px;color:#a0a0c0">${a.version ? "v" + esc(a.version) : "—"}</span>`],
+    ["必要性", a => {
+      const c = a.necessity === "必要" ? "var(--success)" : a.necessity === "可選" ? "var(--warn)" : "var(--danger)";
+      return `<span style="color:${c};font-size:11px;font-weight:600">${esc(a.necessity)}</span>`;
+    }],
+    ["價格", a => `<span style="font-size:10px;color:#a0a0c0">${esc(a.price)}</span>`],
+    ["大小", a => `<span style="font-size:10px;color:#a0a0c0">${esc(a.fileSize || "—")}</span>`],
+    ["功能", a => `<span style="font-size:10px;color:#c0c0d8;line-height:1.5">${esc(a.description)}</span>`],
+    ["優點", a => (a.pros || []).map(p => `<div style="font-size:9px;color:var(--good);margin-bottom:2px">+ ${esc(p)}</div>`).join("")],
+    ["缺點", a => (a.cons || []).map(c => `<div style="font-size:9px;color:var(--bad);margin-bottom:2px">− ${esc(c)}</div>`).join("")],
+    ["建議", a => `<span style="font-size:9px;color:#7070a0">${esc(a.necessityReason)}</span>`],
+  ];
+
+  const headerRow = `<div class="cmp-row" style="grid-template-columns:${cols}"><div></div>${headerCells}</div>`;
+  const dataRows = rows.map(([label, fn]) =>
+    `<div class="cmp-row" style="grid-template-columns:${cols}"><div class="cmp-label">${label}</div>${list.map(a => `<div class="cmp-cell">${fn(a)}</div>`).join("")}</div>`
+  ).join("");
+
+  document.getElementById("compareGrid").innerHTML = headerRow + dataRows;
+
+  // Wire up per-app remove buttons
+  document.querySelectorAll('[data-cmp-remove]').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const id = +btn.dataset.cmpRemove;
+      state.selected.delete(id);
+      // If we drop below 2, fall back to tracker view via the empty-state branch
+      render();
+      toast("已從比較移除");
+    };
+  });
+
+  document.getElementById("btnBackToTracker").onclick = () => { state.tab = "tracker"; render(); };
+  document.getElementById("btnClearCompare").onclick = () => {
+    state.selected.clear();
+    render();
+    toast("已清空比較");
+  };
+}
+
+function renderArchive() {
+  const listEl = document.getElementById("archiveList");
+  const emptyEl = document.getElementById("archiveEmpty");
+  const hintEl = document.getElementById("archiveHint");
+  const purgeBtn = document.getElementById("btnPurgeAll");
+
+  if (state.archived.length === 0) {
+    listEl.innerHTML = "";
+    emptyEl.classList.remove("hidden");
+    hintEl.textContent = "";
+    purgeBtn.style.display = "none";
+    return;
+  }
+  emptyEl.classList.add("hidden");
+  purgeBtn.style.display = "inline-block";
+  hintEl.textContent = `共 ${state.archived.length} 個已刪除的 App（最新優先）`;
+
+  listEl.innerHTML = state.archived.map(app => {
+    const iconHtml = app.icon
+      ? `<img src="${esc(app.icon)}" class="icon-img" alt="${esc(app.name)}" onerror="this.outerHTML='<div class=\'icon-fallback\'>${categoryEmoji[app.category] || "📦"}</div>'" style="width:44px;height:44px;opacity:0.7">`
+      : `<div class="icon-fallback" style="width:44px;height:44px;font-size:20px">${categoryEmoji[app.category] || "📦"}</div>`;
+    const when = app.deletedAt ? new Date(app.deletedAt).toLocaleDateString("zh-TW", {year:"numeric",month:"2-digit",day:"2-digit"}) : "—";
+    return `
+      <div class="archive-card">
+        ${iconHtml}
+        <div class="archive-meta">
+          <div class="archive-name">${esc(app.name)}</div>
+          <div class="archive-info">${categoryEmoji[app.category] || ""} ${esc(app.category)} · ${esc(app.developer)} · 刪於 ${when}</div>
+        </div>
+        <div class="archive-actions">
+          ${app.storeUrl ? `<a class="link-btn" href="${esc(app.storeUrl)}" target="_blank" rel="noopener">↗</a>` : ""}
+          <button class="restore-btn" data-restore="${app.id}">↩ 還原</button>
+          <button class="purge-btn" data-purge="${app.id}" title="永久刪除">✕</button>
+        </div>
+      </div>`;
+  }).join("");
+
+  // Restore handler
+  listEl.querySelectorAll("[data-restore]").forEach(btn => {
+    btn.onclick = () => {
+      const id = +btn.dataset.restore;
+      const app = state.archived.find(a => a.id === id);
+      if (!app) return;
+      // Check if app with same storeUrl already in tracker (shouldn't happen but be safe)
+      if (app.storeUrl && state.apps.some(a => a.storeUrl === app.storeUrl)) {
+        toast("⚠ 追蹤清單已有同個 App");
+        return;
+      }
+      const { deletedAt, ...rest } = app;
+      state.apps.push({ ...rest, id: Date.now() });
+      state.archived = state.archived.filter(a => a.id !== id);
+      saveToStorage();
+      render();
+      toast(`✓ ${app.name} 已還原`);
+    };
+  });
+
+  // Purge single
+  listEl.querySelectorAll("[data-purge]").forEach(btn => {
+    btn.onclick = async () => {
+      const id = +btn.dataset.purge;
+      const app = state.archived.find(a => a.id === id);
+      if (!app) return;
+      const ok = await showConfirm(`${app.name}\n\n此操作無法復原`, "永久刪除？");
+      if (ok) {
+        state.archived = state.archived.filter(a => a.id !== id);
+        saveToStorage();
+        render();
+        toast("已永久刪除");
+      }
+    };
+  });
+
+  // Purge all
+  purgeBtn.onclick = async () => {
+    const ok = await showConfirm(`共 ${state.archived.length} 個歷史紀錄\n\n此操作無法復原`, "清空全部歷史？");
+    if (ok) {
+      state.archived = [];
+      saveToStorage();
+      render();
+      toast("已清空歷史");
+    }
+  };
+}
+
+// ── Custom Modal (replaces browser confirm) ──
+function showConfirm(message, title = "確認") {
+  return new Promise((resolve) => {
+    const backdrop = document.getElementById("modalBackdrop");
+    document.getElementById("modalTitle").textContent = title;
+    document.getElementById("modalMsg").textContent = message;
+    const okBtn = document.getElementById("modalOk");
+    const cancelBtn = document.getElementById("modalCancel");
+    const close = (result) => {
+      backdrop.classList.add("hidden");
+      okBtn.onclick = null;
+      cancelBtn.onclick = null;
+      backdrop.onclick = null;
+      resolve(result);
+    };
+    okBtn.onclick = (e) => { e.stopPropagation(); close(true); };
+    cancelBtn.onclick = (e) => { e.stopPropagation(); close(false); };
+    backdrop.onclick = (e) => { if (e.target === backdrop) close(false); };
+    backdrop.classList.remove("hidden");
+  });
+}
+
+// ── Toast ──
+function toast(msg, ms = 2000) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove("show"), ms);
+}
+
+// ── Event handlers ──
+document.querySelectorAll(".tab").forEach(t => {
+  t.onclick = () => { state.tab = t.dataset.tab; render(); };
+});
+
+document.getElementById("btnImport").onclick = () => {
+  const p = document.getElementById("importPanel");
+  const e = document.getElementById("exportPanel");
+  e.classList.add("hidden");
+  p.classList.toggle("hidden");
+  document.getElementById("importError").classList.add("hidden");
+};
+document.getElementById("btnSyncAll").onclick = async () => {
+  if (state.apps.length === 0) { toast("清單是空的"); return; }
+  if (state.syncing.size > 0) { toast("正在同步中..."); return; }
+  toast("開始同步所有 App...", 1500);
+  await doSyncAll();
+};
+
+document.getElementById("btnExport").onclick = () => {
+  const p = document.getElementById("exportPanel");
+  const i = document.getElementById("importPanel");
+  i.classList.add("hidden");
+  document.getElementById("exportText").value = JSON.stringify(state.apps, null, 2);
+  p.classList.toggle("hidden");
+};
+
+document.getElementById("btnDoImport").onclick = () => {
+  const text = document.getElementById("importText").value.trim();
+  const err = document.getElementById("importError");
+  err.classList.add("hidden");
+  if (!text) return;
+  try {
+    const clean = text.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(clean);
+    // Support both single object and array
+    const items = Array.isArray(parsed) ? parsed : [parsed];
+    let added = 0;
+    items.forEach(p => {
+      if (!p || !p.name) return;
+      state.apps.push({ ...p, id: Date.now() + added });
+      added++;
+    });
+    if (added === 0) throw new Error("無有效資料");
+    document.getElementById("importText").value = "";
+    document.getElementById("importPanel").classList.add("hidden");
+    saveToStorage();
+    render();
+    toast(`✓ 已新增 ${added} 個 App`);
+  } catch (e) {
+    err.textContent = "JSON 格式錯誤：" + e.message;
+    err.classList.remove("hidden");
+  }
+};
+
+document.getElementById("btnClearInput").onclick = () => {
+  document.getElementById("importText").value = "";
+  document.getElementById("importError").classList.add("hidden");
+};
+
+document.getElementById("btnPaste").onclick = async () => {
+  try {
+    const t = await navigator.clipboard.readText();
+    if (!t.trim()) { toast("剪貼簿是空的"); return; }
+    document.getElementById("importText").value = t;
+    toast("✓ 已貼上");
+  } catch (e) { toast("無法存取剪貼簿"); }
+};
+
+document.getElementById("btnCopy").onclick = async () => {
+  try {
+    await navigator.clipboard.writeText(document.getElementById("exportText").value);
+    toast("✓ 已複製到剪貼簿");
+  } catch (e) { toast("複製失敗"); }
+};
+
+document.getElementById("btnDownload").onclick = () => {
+  const data = JSON.stringify(state.apps, null, 2);
+  const blob = new Blob([data], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `app-vault-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast("✓ 已下載備份");
+};
+
+document.getElementById("btnImportFile").onclick = () => document.getElementById("fileInput").click();
+document.getElementById("fileInput").onchange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!Array.isArray(data)) throw new Error("檔案應為 JSON 陣列");
+      showConfirm(`匯入 ${data.length} 個 App？這會覆蓋當前清單。`).then(ok => { if (ok) {
+        state.apps = data;
+        state.selected.clear();
+        state.expanded.clear();
+        saveToStorage();
+        render();
+        toast(`✓ 已匯入 ${data.length} 個 App`);
+      } }); // close then/if
+    } catch (err) {
+      toast("匯入失敗：" + err.message, 3000);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = ""; // reset
+};
+
+// ── PWA: Service worker ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed', err));
+  });
+}
+
+// ── Init ──
+loadFromStorage();
+render();
+</script>
+</body>
+</html>
